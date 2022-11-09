@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,minimal-ui,viewport-fit=cover">
+        <meta name=apple-mobile-web-app-capable content=yes>
+        <meta name=apple-mobile-web-app-status-bar-style content=black>
+        <title>org.inventivetalent.teamcity PI</title>
+        <link rel="stylesheet" href="inspector.css">
+    </head>
+    <body>
+        <div class="sdpi-wrapper">
+
+            <div type="select" class="sdpi-item">
+                <div class="sdpi-item-label">Method</div>
+                <select class="sdpi-item-value select" id="method">
+                    <option selected value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                </select>
+            </div>
+            <div class="sdpi-item">
+                <div class="sdpi-item-label">URL</div>
+                <input id="url" class="sdpi-item-value" type="text" value=""/>
+            </div>
+            <div class="sdpi-item">
+                <div class="sdpi-item-label">Property Path</div>
+                <input id="path" class="sdpi-item-value" type="text" value=""/>
+            </div>
+            <div type="textarea" class="sdpi-item">
+                <div class="sdpi-item-label up20" data-localize="Headers">Headers</div>
+                <div class="sdpi-item-value textarea">
+                    <textarea type="textarea" id="headers" placeholder="User-Agent: streamdeck-webquery"></textarea>
+                </div>
+            </div>
+
+            <div class="sdpi-item">
+                <div class="sdpi-item-label">Auto-Update Interval (seconds) - 0 to disable</div>
+                <input id="interval" class="sdpi-item-value" type="number" value="0"/>
+            </div>
+
+
+            <!-- END OF SDPI-WRAPPER -->
+
+        </div>
+
+        <script src="inspector.js"></script>
+    </body>
+</html>
