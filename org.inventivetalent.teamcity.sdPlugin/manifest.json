@@ -9,7 +9,7 @@
         }
       ],
       "Tooltip": "This is an example tooltip",
-      "UUID": "org.inventivetalent.webquery.action"
+      "UUID": "org.inventivetalent.teamcity.action"
     }
   ],
   "SDKVersion": 2,
