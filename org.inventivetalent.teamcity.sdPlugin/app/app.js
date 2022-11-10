@@ -33,10 +33,12 @@ const action = {
         this.context = json.context;
         this.settings = json.payload.settings;
 
-        this.refreshUser();
+        this.refreshUser().then(() => {
+            if (!this.currentUser) return;
 
-        setInterval(() => this.refreshAllBuilds(), 10000);
-        this.refreshAllBuilds();
+            this.clearAndSetInterval('allRefresh', () => this.refreshAllBuilds(), 10000);
+            this.refreshAllBuilds();
+        })
     },
     onWillDisappear: function (json) {
         console.log('onWillDisappear', json);
@@ -88,7 +90,7 @@ const action = {
     },
     refreshUser: function () {
         console.log("#refreshUser")
-        this.getCurrentUser().then(currentUser => {
+        return this.getCurrentUser().then(currentUser => {
             this.currentUser = currentUser;
         })
     },
@@ -124,7 +126,7 @@ const action = {
         do {
             fontSize--;
             ctx.font = fontSize + 'px ' + (this.settings.font || 'system-ui');
-        } while (fontSize > 6 && ctx.measureText(text).width > canvas.width);
+        } while (fontSize > 6 && ctx.measureText(text).width > canvas.width-4);
     },
     render: function () {
         console.log("#render");
@@ -195,10 +197,11 @@ const action = {
             }));
         }
 
-        console.log("runningBuilds", this.runningBuilds);
-        console.log("stillRunning", stillRunning);
 
         Promise.all(promises).then(() => {
+            console.log("runningBuilds", this.runningBuilds);
+            console.log("stillRunning", stillRunning);
+
             if (Object.keys(this.runningBuilds).length > 0) {
                 let build0 = this.runningBuilds[Object.keys(this.runningBuilds)[0]];
 
@@ -216,10 +219,12 @@ const action = {
             }
 
 
-            // remove finished builds
-            for (let id of finishedBuilds) {
-                delete this.runningBuilds[id];
-            }
+            this.clearAndSetTimeout('finishedBuildCleanup', () => {
+                // remove finished builds
+                for (let id of finishedBuilds) {
+                    delete this.runningBuilds[id];
+                }
+            }, 3000);
         })
     },
     refreshAllBuilds: function () {
@@ -242,7 +247,7 @@ const action = {
                         .then(b => b.change)
                         .then(changes => {
                             console.log("change", changes);
-                            return changes.filter(c => c.user.id === this.currentUser.id);
+                            return changes.filter(c => c.user?.id === this.currentUser.id);
                         })
                         .then(changes => {
                             if (changes.length > 0) {
