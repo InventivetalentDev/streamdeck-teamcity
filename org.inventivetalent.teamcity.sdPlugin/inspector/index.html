@@ -7,23 +7,21 @@
         <meta name=apple-mobile-web-app-status-bar-style content=black>
         <title>org.inventivetalent.teamcity PI</title>
         <link rel="stylesheet" href="inspector.css">
+        <script src="../common.js"></script>
     </head>
     <body>
         <div class="sdpi-wrapper">
 
-            <div type="select" class="sdpi-item">
-                <div class="sdpi-item-label">Method</div>
-                <select class="sdpi-item-value select" id="method">
-                    <option selected value="GET">GET</option>
-                    <option value="POST">POST</option>
-                    <option value="PUT">PUT</option>
-                    <option value="DELETE">DELETE</option>
-                </select>
+            <div class="sdpi-item">
+                <div class="sdpi-item-label">Host</div>
+                <input id="host" class="sdpi-item-value" type="text" value="https://teamcity.example.com"/>
             </div>
             <div class="sdpi-item">
-                <div class="sdpi-item-label">URL</div>
-                <input id="url" class="sdpi-item-value" type="text" value=""/>
+                <div class="sdpi-item-label">Access Token</div>
+                <input id="token" class="sdpi-item-value" type="text" value=""/>
             </div>
+
+
             <div class="sdpi-item">
                 <div class="sdpi-item-label">Property Path</div>
                 <input id="path" class="sdpi-item-value" type="text" value=""/>
