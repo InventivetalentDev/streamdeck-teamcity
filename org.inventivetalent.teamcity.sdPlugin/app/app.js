@@ -18,7 +18,12 @@ const action = {
     context: undefined,
     settings: {},
     currentUser: undefined,
-    pendingBuilds: [],
+    runningBuilds: {},
+    backgroundColor: 'black',
+    timers: {
+        allRefresh: 0,
+        runningRefresh: 0
+    },
     onReceivedSettings: function (json) {
         console.log('onReceivedSettings', json);
         this.settings = json?.payload?.settings || {};
@@ -29,16 +34,33 @@ const action = {
         this.settings = json.payload.settings;
 
         this.refreshUser();
+
+        setInterval(() => this.refreshAllBuilds(), 10000);
+        this.refreshAllBuilds();
     },
     onWillDisappear: function (json) {
         console.log('onWillDisappear', json);
     },
     onKeyUp: function (json) {
         console.log('onKeyUp', json);
-        this.refresh();
+        this.refreshAllBuilds();
     },
     setTitle: function (title) {
         $SD.api.setTitle(this.context, title)
+    },
+    showOk: function () {
+        $SD.api.showOk(this.context);
+    },
+    showAlert: function () {
+        $SD.api.showAlert(this.context);
+    },
+    clearAndSetTimeout(key, fun, time) {
+        clearTimeout(this.timers[key]);
+        this.timers[key] = setTimeout(fun, time);
+    },
+    clearAndSetInterval(key, fun, time) {
+        clearInterval(this.timers[key]);
+        this.timers[key] = setInterval(fun, time);
     },
     apiRequest: function (query) {
         let url = new URL(query, this.settings.host);
@@ -62,12 +84,16 @@ const action = {
         return this.apiRequest("/app/rest/users/current?fields=username,name,id,email");
     },
     getBuilds: function () {
-        return this.apiRequest("/app/rest/builds?locator=running:true&fields=build(user,id,status,state,finishEstimate,changes,startDate,queuedDate,finishDate,running,branchName,percentageComplete)").then(b => b.build);
+        return this.apiRequest("/app/rest/builds?locator=running:true&fields=build(user,id,status,state,finishEstimate,changes,startDate,queuedDate,finishDate,running,branchName,percentageComplete,triggered(user),buildType)").then(b => b.build);
     },
     refreshUser: function () {
+        console.log("#refreshUser")
         this.getCurrentUser().then(currentUser => {
             this.currentUser = currentUser;
         })
+    },
+    getBuildById: function (id) {
+        return this.apiRequest(`/app/rest/builds?locator=id:${ id }&fields=build(user,running,buildTypeId,status,state,branchName,startDate,finishDate,finishEstimate,triggered(user),buildType)`).then(b => b.build);
     },
     shouldIncludeBuild: function (build) {
         // if (!build.changes.count || build.changes.count <= 0) return false;
@@ -82,27 +108,122 @@ const action = {
         }
         return false;
     },
+    draw: function (ctxConsumer) {
+        console.log("#draw")
+        let canvas = document.createElement('canvas');
+        canvas.width = 72;
+        canvas.height = 72;
+
+        let ctx = canvas.getContext('2d');
+        ctxConsumer(canvas, ctx);
+
+        $SD.api.setImage(this.context, canvas.toDataURL('image/png'));
+    },
+    autoFontSize: function (canvas, ctx, text, max = 30, min = 6) {
+        let fontSize = 30;
+        do {
+            fontSize--;
+            ctx.font = fontSize + 'px ' + (this.settings.font || 'system-ui');
+        } while (fontSize > 6 && ctx.measureText(text).width > canvas.width);
+    },
     render: function () {
-        let title = "???";
-        if (this.pendingBuilds.length <= 0) {
-            title = "IDLE";
+        console.log("#render");
+        let name = "???";
+        let status = "???";
+        if (Object.keys(this.runningBuilds).length <= 0) {
+            name = "";
+            status = "IDLE";
+
+            if (this.backgroundColor !== 'black') {
+                this.clearAndSetTimeout('backgroundReset', () => this.backgroundColor = 'black');
+            }
         } else {
             //TODO: support multiple
-            let build = this.pendingBuilds[0].build;
-            if (build.finishEstimate) {
-                let duration = moment.duration(moment(build.finishEstimate).diff(moment()))
-                title = "" + duration.seconds() + "s";
-            } else {
-                title = build.state;
-            }
+            let build = this.runningBuilds[Object.keys(this.runningBuilds)[0]];
+            console.log("build", build);
+            if (build) {
+                name = build.buildType.name;
 
-            setTimeout(() => this.render(), 1000);
+                if (build.finishEstimate) {
+                    let duration = moment.duration(moment(build.finishEstimate).diff(moment()))
+                    status = "" + duration.seconds() + "s";
+                } else if (build.percentageComplete) {
+                    status = "" + build.percentageComplete + "%";
+                } else {
+                    status = build.state;
+                }
+
+
+                this.clearAndSetTimeout("render", () => this.render(), 1000);
+            }
         }
 
-        this.setTitle(title);
+        this.draw((canvas, ctx) => {
+            ctx.fillStyle = this.backgroundColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+
+            ctx.font = '14px ' + (this.settings.font || 'system-ui')
+            this.autoFontSize(canvas, ctx, '' + name);
+            ctx.fillText('' + name, canvas.width / 2, canvas.height * 0.2, canvas.width);
+
+            ctx.font = '18px ' + (this.settings.font || 'system-ui');
+            ctx.textBaseline = 'middle';
+            this.autoFontSize(canvas, ctx, '' + status, 18);
+            ctx.fillText('' + status, canvas.width / 2, canvas.height / 2, canvas.width);
+        })
+
+        // this.setTitle(title);
     },
-    //TODO: refresh running builds by their ID instead of checking all builds again
-    refresh: function () {
+    refreshRunningBuilds: function () {
+        console.log("#refreshRunningBuilds")
+        let stillRunning = 0;
+        let finishedBuilds = [];
+        let promises = [];
+        for (let id in this.runningBuilds) {
+            let runningBuild = this.runningBuilds[id];
+            promises.push(this.getBuildById(runningBuild.id).then(build => {
+                runningBuild = {...runningBuild, ...build};
+                this.runningBuilds[id] = runningBuild;
+                if (runningBuild.running) {
+                    stillRunning++;
+                } else {
+                    finishedBuilds.push(id);
+                }
+            }));
+        }
+
+        console.log("runningBuilds", this.runningBuilds);
+        console.log("stillRunning", stillRunning);
+
+        Promise.all(promises).then(() => {
+            if (Object.keys(this.runningBuilds).length > 0) {
+                let build0 = this.runningBuilds[Object.keys(this.runningBuilds)[0]];
+
+                if (stillRunning > 0) {
+                    this.clearAndSetTimeout("runningRefresh", () => this.refreshRunningBuilds(), 2000);
+                } else {
+                    if (build0.status !== 'SUCCESS') {
+                        this.backgroundColor = 'orange';
+                    } else {
+                        this.backgroundColor = 'green';
+                    }
+                }
+
+                this.render();
+            }
+
+
+            // remove finished builds
+            for (let id of finishedBuilds) {
+                delete this.runningBuilds[id];
+            }
+        })
+    },
+    refreshAllBuilds: function () {
+        console.log("#refreshAllBuilds")
         if (!this.currentUser) {
             this.refreshUser();
             return;
@@ -112,33 +233,32 @@ const action = {
             console.log("builds", builds);
 
             let changePromises = [];
-            let pendingBuilds = [];
             for (let build of builds) {
                 if (!this.shouldIncludeBuild(build)) continue;
-                changePromises.push(this.apiRequest(build.changes.href + '&fields=change(user,id,version,username,date,href)')
-                    .then(b => b.change)
-                    .then(changes => {
-                        console.log("change", changes);
-                        return changes.filter(c => c.user.id === this.currentUser.id);
-                    })
-                    .then(changes => {
-                        if (changes.length > 0) {
-                            pendingBuilds.push({
-                                build: build,
-                                changes: changes
-                            })
-                        }
-                    }))
+                if (build.triggered?.user?.id === this.currentUser.id) { // check manually triggered build
+                    this.runningBuilds[build.id] = build;
+                } else { // check changes for user
+                    changePromises.push(this.apiRequest(build.changes.href + '&fields=change(user,id,version,username,date,href)')
+                        .then(b => b.change)
+                        .then(changes => {
+                            console.log("change", changes);
+                            return changes.filter(c => c.user.id === this.currentUser.id);
+                        })
+                        .then(changes => {
+                            if (changes.length > 0) {
+                                this.runningBuilds[build.id] = build;
+                            }
+                        }));
+                }
             }
 
             Promise.all(changePromises).then(() => {
-                console.log("pendingBuilds", pendingBuilds);
-                this.pendingBuilds = pendingBuilds;
+                console.log("runningBuilds", this.runningBuilds);
 
                 this.render();
 
-                if (this.pendingBuilds.length > 0) {
-                    setTimeout(() => this.refresh(), 2000);
+                if (Object.keys(this.runningBuilds).length > 0) {
+                    this.clearAndSetTimeout("runningRefresh", () => this.refreshRunningBuilds(), 1000);
                 }
             })
         })
