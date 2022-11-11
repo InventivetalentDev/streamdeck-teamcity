@@ -66,6 +66,7 @@ const action = {
     },
     apiRequest: function (query) {
         let url = new URL(query, this.settings.host);
+        console.info(url.href);
         return fetch(url, {
             method: 'GET',
             headers: {
@@ -126,15 +127,17 @@ const action = {
         do {
             fontSize--;
             ctx.font = fontSize + 'px ' + (this.settings.font || 'system-ui');
-        } while (fontSize > 6 && ctx.measureText(text).width > canvas.width-4);
+        } while (fontSize > 6 && ctx.measureText(text).width > canvas.width - 4);
     },
     render: function () {
         console.log("#render");
         let name = "???";
         let status = "???";
+        let branch = "???"
         if (Object.keys(this.runningBuilds).length <= 0) {
             name = "";
             status = "IDLE";
+            branch = "";
 
             if (this.backgroundColor !== 'black') {
                 this.clearAndSetTimeout('backgroundReset', () => this.backgroundColor = 'black');
@@ -145,6 +148,7 @@ const action = {
             console.log("build", build);
             if (build) {
                 name = build.buildType.name;
+                branch = build.branchName || "";
 
                 if (build.finishEstimate) {
                     let duration = moment.duration(moment(build.finishEstimate).diff(moment()))
@@ -168,13 +172,17 @@ const action = {
             ctx.textAlign = 'center';
 
             ctx.font = '14px ' + (this.settings.font || 'system-ui')
-            this.autoFontSize(canvas, ctx, '' + name);
+            this.autoFontSize(canvas, ctx, '' + name, 16);
             ctx.fillText('' + name, canvas.width / 2, canvas.height * 0.2, canvas.width);
+
+            ctx.font = '12px ' + (this.settings.font || 'system-ui')
+            this.autoFontSize(canvas, ctx, '' + branch, 14);
+            ctx.fillText('' + branch, canvas.width / 2, canvas.height * 0.4, canvas.width);
 
             ctx.font = '18px ' + (this.settings.font || 'system-ui');
             ctx.textBaseline = 'middle';
-            this.autoFontSize(canvas, ctx, '' + status, 18);
-            ctx.fillText('' + status, canvas.width / 2, canvas.height / 2, canvas.width);
+            this.autoFontSize(canvas, ctx, '' + status, 16);
+            ctx.fillText('' + status, canvas.width / 2, canvas.height * 0.6, canvas.width);
         })
 
         // this.setTitle(title);
