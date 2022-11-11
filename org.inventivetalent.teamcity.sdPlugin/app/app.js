@@ -27,6 +27,8 @@ const action = {
     onReceivedSettings: function (json) {
         console.log('onReceivedSettings', json);
         this.settings = json?.payload?.settings || {};
+
+        this.render();
     },
     onWillAppear: function (json) {
         console.log('onWillAppear', json);
@@ -38,10 +40,17 @@ const action = {
 
             this.clearAndSetInterval('allRefresh', () => this.refreshAllBuilds(), 10000);
             this.refreshAllBuilds();
-        })
+        });
+
     },
     onWillDisappear: function (json) {
         console.log('onWillDisappear', json);
+        for (let k in this.timers) {
+            clearInterval(this.timers[k]);
+            clearTimeout(this.timers[k]);
+            delete this.timers[k];
+            delete this.backgroundImage;
+        }
     },
     onKeyUp: function (json) {
         console.log('onKeyUp', json);
@@ -123,11 +132,11 @@ const action = {
         $SD.api.setImage(this.context, canvas.toDataURL('image/png'));
     },
     autoFontSize: function (canvas, ctx, text, max = 30, min = 6) {
-        let fontSize = 30;
+        let fontSize = max;
         do {
             fontSize--;
             ctx.font = fontSize + 'px ' + (this.settings.font || 'system-ui');
-        } while (fontSize > 6 && ctx.measureText(text).width > canvas.width - 4);
+        } while (fontSize > min && ctx.measureText(text).width > canvas.width - 4);
     },
     render: function () {
         console.log("#render");
@@ -168,6 +177,22 @@ const action = {
             ctx.fillStyle = this.backgroundColor;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            if (this.backgroundColor !== 'black') { // dynamic color for status
+                ctx.fillStyle = this.backgroundColor;
+            } else if (this.settings.background === 'gradient') { // gradient default bg
+                let gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, '#6b57ff');
+                gradient.addColorStop(0.3, '#3dea62');
+                gradient.addColorStop(1, '#07c3f2');
+
+                ctx.fillStyle = gradient;
+            } else { // solid color bg
+                ctx.fillStyle = this.backgroundColor;
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.shadowBlur = 3;
+            ctx.shadowColor = 'black';
             ctx.fillStyle = 'white';
             ctx.textAlign = 'center';
 
@@ -181,7 +206,7 @@ const action = {
 
             ctx.font = '18px ' + (this.settings.font || 'system-ui');
             ctx.textBaseline = 'middle';
-            this.autoFontSize(canvas, ctx, '' + status, 16);
+            this.autoFontSize(canvas, ctx, '' + status, 20);
             ctx.fillText('' + status, canvas.width / 2, canvas.height * 0.6, canvas.width);
         })
 

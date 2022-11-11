@@ -1,11 +1,11 @@
 {
   "Actions": [
     {
-      "Icon": "action/images/actionimage",
-      "Name": "Teamcity",
+      "Icon": "img/TeamCity_icon_100",
+      "Name": "TeamCity Build Status",
       "States": [
         {
-          "Image": "action/images/action"
+          "Image": "img/TeamCity_icon_100"
         }
       ],
       "Tooltip": "This is an example tooltip",
@@ -17,8 +17,8 @@
   "CodePath": "app/index.html",
   "PropertyInspectorPath": "inspector/index.html",
   "Description": "Example description",
-  "Name": "Teamcity",
-  "Icon": "action/images/action",
+  "Name": "TeamCity",
+  "Icon": "img/TeamCity_icon_100",
   "URL": "https://www.elgato.com/en/gaming/stream-deck",
   "Version": "1.0.0",
   "OS": [

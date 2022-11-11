@@ -21,23 +21,13 @@
                 <input id="token" class="sdpi-item-value" type="text" value=""/>
             </div>
 
-
-            <div class="sdpi-item">
-                <div class="sdpi-item-label">Property Path</div>
-                <input id="path" class="sdpi-item-value" type="text" value=""/>
+            <div type="select" class="sdpi-item">
+                <div class="sdpi-item-label">Background</div>
+                <select class="sdpi-item-value select" id="background">
+                    <option selected value="black">black</option>
+                    <option value="gradient">gradient</option>
+                </select>
             </div>
-            <div type="textarea" class="sdpi-item">
-                <div class="sdpi-item-label up20" data-localize="Headers">Headers</div>
-                <div class="sdpi-item-value textarea">
-                    <textarea type="textarea" id="headers" placeholder="User-Agent: streamdeck-webquery"></textarea>
-                </div>
-            </div>
-
-            <div class="sdpi-item">
-                <div class="sdpi-item-label">Auto-Update Interval (seconds) - 0 to disable</div>
-                <input id="interval" class="sdpi-item-value" type="number" value="0"/>
-            </div>
-
 
             <!-- END OF SDPI-WRAPPER -->
 
