@@ -3,6 +3,7 @@
 $SD.on('connected', json => {
     $SD.on('org.inventivetalent.teamcity.action.willAppear', (jsonObj) => action.onWillAppear(jsonObj));
     $SD.on('org.inventivetalent.teamcity.action.willDisappear', (jsonObj) => action.onWillDisappear(jsonObj));
+    $SD.on('org.inventivetalent.teamcity.action.keyDown', (jsonObj) => action.onKeyDown(jsonObj));
     $SD.on('org.inventivetalent.teamcity.action.keyUp', (jsonObj) => action.onKeyUp(jsonObj));
     // $SD.on('org.inventivetalent.teamcity.action.sendToPlugin', (jsonObj) => action.onSendToPlugin(jsonObj));
     $SD.on('org.inventivetalent.teamcity.action.didReceiveSettings', (jsonObj) => action.onReceivedSettings(jsonObj));
@@ -13,6 +14,8 @@ $SD.on('connected', json => {
         console.log('%c%s', 'color: white; background: red; font-size: 13px;', '[app.js]propertyInspectorDidDisappear:');
     });
 });
+
+const tcBuildFields = "href,webUrl,user,id,status,state,finishEstimate,changes,startDate,queuedDate,finishDate,running,branchName,percentageComplete,triggered(user),buildType";
 
 const action = {
     context: undefined,
@@ -52,9 +55,18 @@ const action = {
             delete this.backgroundImage;
         }
     },
+    onKeyDown: function (json) {
+        console.log('onKeyDown', json);
+        this.refreshAllBuilds();
+    },
     onKeyUp: function (json) {
         console.log('onKeyUp', json);
-        this.refreshAllBuilds();
+        if (Object.keys(this.runningBuilds).length > 0) {
+            let build0 = this.runningBuilds[Object.keys(this.runningBuilds)[0]];
+            if (build0.webUrl) {
+                $SD.api.openUrl(this.context, build0.webUrl);
+            }
+        }
     },
     setTitle: function (title) {
         $SD.api.setTitle(this.context, title)
@@ -96,7 +108,7 @@ const action = {
         return this.apiRequest("/app/rest/users/current?fields=username,name,id,email");
     },
     getBuilds: function () {
-        return this.apiRequest("/app/rest/builds?locator=running:true&fields=build(user,id,status,state,finishEstimate,changes,startDate,queuedDate,finishDate,running,branchName,percentageComplete,triggered(user),buildType)").then(b => b.build);
+        return this.apiRequest(`/app/rest/builds?locator=running:true&fields=build(${ tcBuildFields })`).then(b => b.build);
     },
     refreshUser: function () {
         console.log("#refreshUser")
@@ -105,7 +117,7 @@ const action = {
         })
     },
     getBuildById: function (id) {
-        return this.apiRequest(`/app/rest/builds?locator=id:${ id }&fields=build(user,running,buildTypeId,status,state,branchName,startDate,finishDate,finishEstimate,triggered(user),buildType)`).then(b => b.build);
+        return this.apiRequest(`/app/rest/builds?locator=id:${ id }&fields=build(${ tcBuildFields })`).then(b => b.build[0]);
     },
     shouldIncludeBuild: function (build) {
         // if (!build.changes.count || build.changes.count <= 0) return false;
@@ -159,7 +171,9 @@ const action = {
                 name = build.buildType.name;
                 branch = build.branchName || "";
 
-                if (build.finishEstimate) {
+                if (!build.running) {
+                    status = build.state;
+                } else if (build.finishEstimate) {
                     let duration = moment.duration(moment(build.finishEstimate).diff(moment()))
                     status = "" + duration.seconds() + "s";
                 } else if (build.percentageComplete) {
@@ -220,7 +234,7 @@ const action = {
         for (let id in this.runningBuilds) {
             let runningBuild = this.runningBuilds[id];
             promises.push(this.getBuildById(runningBuild.id).then(build => {
-                runningBuild = {...runningBuild, ...build};
+                runningBuild = {...{}, ...runningBuild, ...build};
                 this.runningBuilds[id] = runningBuild;
                 if (runningBuild.running) {
                     stillRunning++;
