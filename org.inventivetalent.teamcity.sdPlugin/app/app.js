@@ -41,7 +41,7 @@ const action = {
         this.refreshUser().then(() => {
             if (!this.currentUser) return;
 
-            this.clearAndSetInterval('allRefresh', () => this.refreshAllBuilds(), 10000);
+            this.clearAndSetInterval('allRefresh', () => this.refreshAllBuilds(), 8000);
             this.refreshAllBuilds();
         });
 
