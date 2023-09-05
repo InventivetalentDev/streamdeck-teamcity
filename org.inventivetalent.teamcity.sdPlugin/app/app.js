@@ -85,7 +85,14 @@ const action = {
     },
     clearAndSetTimeout(key, fun, time) {
         clearTimeout(this.timers[key]);
-        this.timers[key] = setTimeout(fun, time);
+        let expected = Date.now() + time;
+        let wrapper = () => {
+            if (Date.now() > expected) {
+                console.warn('timeout ' + key + ' is late by ' + (Date.now() - expected) + 'ms');
+            }
+            fun();
+        };
+        this.timers[key] = setTimeout(wrapper, time);
     },
     clearAndSetInterval(key, fun, time) {
         clearInterval(this.timers[key]);
