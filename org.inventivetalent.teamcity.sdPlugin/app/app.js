@@ -234,8 +234,9 @@ const action = {
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             if (progress > 0) {
-                ctx.fillStyle = 'rgba(0,255,0,0.5)';
-                ctx.fillRect(0, canvas.height - 10, canvas.width * progress / 100, 10);
+                ctx.fillStyle = 'rgba(0,192,0,0.5)';
+                ctx.fillRect(0, 0, canvas.width * progress / 100, canvas.height);
+                // ctx.fillRect(0, canvas.height - 8, canvas.width * progress / 100, 5);
             }
 
             ctx.shadowBlur = 3;
@@ -245,16 +246,16 @@ const action = {
 
             ctx.font = '14px ' + (this.settings.font || 'system-ui')
             this.autoFontSize(canvas, ctx, '' + name, 16);
-            ctx.fillText('' + name, canvas.width / 2, canvas.height * 0.2, canvas.width);
+            ctx.fillText('' + name, canvas.width / 2, canvas.height * 0.3, canvas.width);
 
             ctx.font = '12px ' + (this.settings.font || 'system-ui')
             this.autoFontSize(canvas, ctx, '' + branch, 14);
-            ctx.fillText('' + branch, canvas.width / 2, canvas.height * 0.4, canvas.width);
+            ctx.fillText('' + branch, canvas.width / 2, canvas.height * 0.5, canvas.width);
 
             ctx.font = '18px ' + (this.settings.font || 'system-ui');
             ctx.textBaseline = 'middle';
             this.autoFontSize(canvas, ctx, '' + status, 20);
-            ctx.fillText('' + status, canvas.width / 2, canvas.height * 0.6, canvas.width);
+            ctx.fillText('' + status, canvas.width / 2, canvas.height * 0.7, canvas.width);
         })
 
         // this.setTitle(title);
