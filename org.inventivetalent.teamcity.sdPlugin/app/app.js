@@ -41,7 +41,7 @@ const action = {
         this.refreshUser().then(() => {
             if (!this.currentUser) return;
 
-            this.clearAndSetInterval('allRefresh', () => this.refreshAllBuilds(), 8000);
+            this.clearAndSetInterval('allRefresh', () => this.refreshAllBuilds(), 6000 + Math.random() * 100);
             this.refreshAllBuilds();
         });
 
@@ -168,6 +168,7 @@ const action = {
             let build = this.runningBuilds[Object.keys(this.runningBuilds)[0]];
             console.log("build", build);
             if (build) {
+
                 name = build.buildType.name;
                 branch = build.branchName || "";
 
@@ -177,13 +178,20 @@ const action = {
                     let duration = moment.duration(moment(build.finishEstimate).diff(moment()))
                     status = "" + duration.seconds() + "s";
                 } else if (build.percentageComplete) {
-                    status = "" + build.percentageComplete + "%";
+                    if (!build.estimatedPercentageComplete || build.percentageComplete > build.estimatedPercentageComplete) {
+                        build.estimatedPercentageComplete = build.percentageComplete;
+                    }
+                    if (build.percentPerSecond) {
+                        build.estimatedPercentageComplete += build.percentPerSecond / 2;
+                    }
+
+                    status = "" + Math.round(build.estimatedPercentageComplete) + "%";
                 } else {
                     status = build.state;
                 }
 
 
-                this.clearAndSetTimeout("render", () => this.render(), 1000);
+                this.clearAndSetTimeout("render", () => this.render(), 500);
             }
         }
 
@@ -234,7 +242,16 @@ const action = {
         for (let id in this.runningBuilds) {
             let runningBuild = this.runningBuilds[id];
             promises.push(this.getBuildById(runningBuild.id).then(build => {
-                runningBuild = {...{}, ...runningBuild, ...build};
+                runningBuild = { ...{}, ...runningBuild, ...build };
+
+                if (!runningBuild.lastPercentageComplete) {
+                    runningBuild.lastPercentageComplete = runningBuild.percentageComplete;
+                    runningBuild.lastRefresh = Date.now();
+                }
+                runningBuild.percentPerSecond = (runningBuild.percentageComplete - runningBuild.lastPercentageComplete) / ((Date.now() - runningBuild.lastRefresh) / 1000);
+                runningBuild.lastRefresh = Date.now();
+                runningBuild.lastPercentageComplete = runningBuild.percentageComplete;
+
                 this.runningBuilds[id] = runningBuild;
                 if (runningBuild.running) {
                     stillRunning++;
