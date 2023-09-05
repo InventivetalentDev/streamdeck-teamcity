@@ -19,7 +19,7 @@
   "Description": "Example description",
   "Name": "TeamCity",
   "Icon": "img/TeamCity_icon",
-  "Version": "1.0.0",
+  "Version": "1.1.0",
   "OS": [
     {
       "Platform": "mac",
