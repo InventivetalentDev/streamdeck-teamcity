@@ -193,6 +193,9 @@ const action = {
                     if (build.percentPerSecond) {
                         build.estimatedPercentageComplete += build.percentPerSecond / 2;
                     }
+                    if (build.estimatedPercentageComplete > 100) {
+                        build.estimatedPercentageComplete = 100;
+                    }
 
                     status = "" + Math.round(build.estimatedPercentageComplete) + "%";
 
