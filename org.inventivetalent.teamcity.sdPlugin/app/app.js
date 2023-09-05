@@ -104,7 +104,7 @@ const action = {
         return fetch(url, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${ this.settings.token }`,
+                'Authorization': `Bearer ${this.settings.token}`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'User-Agent': 'streamdeck-teamcity (+https://github.com/InventivetalentDev/streamdeck-teamcity)',
@@ -122,7 +122,7 @@ const action = {
         return this.apiRequest("/app/rest/users/current?fields=username,name,id,email");
     },
     getBuilds: function () {
-        return this.apiRequest(`/app/rest/builds?locator=running:true&fields=build(${ tcBuildFields })`).then(b => b.build);
+        return this.apiRequest(`/app/rest/builds?locator=running:true&fields=build(${tcBuildFields})`).then(b => b.build);
     },
     refreshUser: function () {
         console.log("#refreshUser")
@@ -131,7 +131,7 @@ const action = {
         })
     },
     getBuildById: function (id) {
-        return this.apiRequest(`/app/rest/builds?locator=id:${ id }&fields=build(${ tcBuildFields })`).then(b => b.build[0]);
+        return this.apiRequest(`/app/rest/builds?locator=id:${id}&fields=build(${tcBuildFields})`).then(b => b.build[0]);
     },
     shouldIncludeBuild: function (build) {
         // if (!build.changes.count || build.changes.count <= 0) return false;
@@ -203,7 +203,7 @@ const action = {
                     if (!build.estimatedPercentageComplete || build.percentageComplete > build.estimatedPercentageComplete) {
                         build.estimatedPercentageComplete = build.percentageComplete;
                     }
-                    if (build.percentPerSecond) {
+                    if (build.percentPerSecond && build.estimatedPercentageComplete < build.percentageComplete + 5) {
                         build.estimatedPercentageComplete += build.percentPerSecond / 2;
                     }
                     if (build.estimatedPercentageComplete > 100) {
@@ -275,7 +275,7 @@ const action = {
         for (let id in this.runningBuilds) {
             let runningBuild = this.runningBuilds[id];
             promises.push(this.getBuildById(runningBuild.id).then(build => {
-                runningBuild = { ...{}, ...runningBuild, ...build };
+                runningBuild = {...{}, ...runningBuild, ...build};
 
                 if (!runningBuild.lastPercentageComplete) {
                     runningBuild.lastPercentageComplete = runningBuild.percentageComplete;
@@ -345,7 +345,7 @@ const action = {
                 if (!this.shouldIncludeBuild(build)) continue;
                 if (build.triggered?.user?.id === this.currentUser.id) { // check manually triggered build
                     let oldBuild = this.runningBuilds[build.id] || {};
-                    this.runningBuilds[build.id] = { ...{}, ...oldBuild, ...build };
+                    this.runningBuilds[build.id] = {...{}, ...oldBuild, ...build};
                 } else { // check changes for user
                     changePromises.push(this.apiRequest(build.changes.href + '&fields=change(user,id,version,username,date,href)')
                         .then(b => b.change)
@@ -356,7 +356,7 @@ const action = {
                         .then(changes => {
                             if (changes.length > 0) {
                                 let oldBuild = this.runningBuilds[build.id] || {};
-                                this.runningBuilds[build.id] = { ...{}, ...oldBuild, ...build };
+                                this.runningBuilds[build.id] = {...{}, ...oldBuild, ...build};
                             }
                         }));
                 }
