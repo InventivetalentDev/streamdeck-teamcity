@@ -57,7 +57,13 @@ const action = {
     },
     onKeyDown: function (json) {
         console.log('onKeyDown', json);
-        this.refreshAllBuilds();
+
+        this.refreshUser().then(() => {
+            if (!this.currentUser) return;
+
+            this.clearAndSetInterval('allRefresh', () => this.refreshAllBuilds(), 6000 + Math.random() * 100);
+            this.refreshAllBuilds();
+        });
     },
     onKeyUp: function (json) {
         console.log('onKeyUp', json);
