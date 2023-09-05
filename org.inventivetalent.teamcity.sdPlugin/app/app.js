@@ -155,6 +155,7 @@ const action = {
         let name = "???";
         let status = "???";
         let branch = "???"
+        let progress = 0;
         if (Object.keys(this.runningBuilds).length <= 0) {
             name = "";
             status = "IDLE";
@@ -186,6 +187,8 @@ const action = {
                     }
 
                     status = "" + Math.round(build.estimatedPercentageComplete) + "%";
+
+                    progress = build.estimatedPercentageComplete;
                 } else {
                     status = build.state;
                 }
@@ -212,6 +215,11 @@ const action = {
                 ctx.fillStyle = this.backgroundColor;
             }
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (progress > 0) {
+                ctx.fillStyle = 'rgba(0,255,0,0.5)';
+                ctx.fillRect(0, canvas.height - 10, canvas.width * progress / 100, 10);
+            }
 
             ctx.shadowBlur = 3;
             ctx.shadowColor = 'black';
