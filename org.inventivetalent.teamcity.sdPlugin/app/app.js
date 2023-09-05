@@ -94,7 +94,8 @@ const action = {
                 'Authorization': `Bearer ${ this.settings.token }`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'User-Agent': 'streamdeck-teamcity'
+                'User-Agent': 'streamdeck-teamcity (+https://github.com/InventivetalentDev/streamdeck-teamcity)',
+                'X-User-Agent': 'streamdeck-teamcity (+https://github.com/InventivetalentDev/streamdeck-teamcity)'
             }
         }).then(response => {
             console.log(response);
@@ -165,8 +166,15 @@ const action = {
                 this.clearAndSetTimeout('backgroundReset', () => this.backgroundColor = 'black');
             }
         } else {
-            //TODO: support multiple
-            let build = this.runningBuilds[Object.keys(this.runningBuilds)[0]];
+            // find build with most progress
+            let build = Object.values(this.runningBuilds)
+                .sort((a, b) => {
+                    if (a.running && !b.running) return -1;
+                    if (!a.running && b.running) return 1;
+                    if (a.percentageComplete > b.percentageComplete) return -1;
+                    if (a.percentageComplete < b.percentageComplete) return 1;
+                    return 0;
+                })[0];
             console.log("build", build);
             if (build) {
 
@@ -256,7 +264,13 @@ const action = {
                     runningBuild.lastPercentageComplete = runningBuild.percentageComplete;
                     runningBuild.lastRefresh = Date.now();
                 }
+
+                let lastPercentPerSecond = runningBuild.percentPerSecond;
                 runningBuild.percentPerSecond = (runningBuild.percentageComplete - runningBuild.lastPercentageComplete) / ((Date.now() - runningBuild.lastRefresh) / 1000);
+                if (lastPercentPerSecond) {
+                    runningBuild.percentPerSecond = (runningBuild.percentPerSecond + lastPercentPerSecond) / 2;
+                }
+
                 runningBuild.lastRefresh = Date.now();
                 runningBuild.lastPercentageComplete = runningBuild.percentageComplete;
 
@@ -313,7 +327,8 @@ const action = {
             for (let build of builds) {
                 if (!this.shouldIncludeBuild(build)) continue;
                 if (build.triggered?.user?.id === this.currentUser.id) { // check manually triggered build
-                    this.runningBuilds[build.id] = build;
+                    let oldBuild = this.runningBuilds[build.id] || {};
+                    this.runningBuilds[build.id] = { ...{}, ...oldBuild, ...build };
                 } else { // check changes for user
                     changePromises.push(this.apiRequest(build.changes.href + '&fields=change(user,id,version,username,date,href)')
                         .then(b => b.change)
@@ -323,7 +338,8 @@ const action = {
                         })
                         .then(changes => {
                             if (changes.length > 0) {
-                                this.runningBuilds[build.id] = build;
+                                let oldBuild = this.runningBuilds[build.id] || {};
+                                this.runningBuilds[build.id] = { ...{}, ...oldBuild, ...build };
                             }
                         }));
                 }
